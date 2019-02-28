@@ -1,0 +1,43 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: gcc:7.4
+
+    steps:
+      - checkout
+
+      - run:
+          name: Update Repo Information
+          command: apt-get update -qq
+
+      - run:
+          name: Install Cmake
+          command: apt-get install -qq -y cpio cmake wget g++-multilib
+      
+      - run:
+          name: Install OpenCV dependencies
+          command: apt-get install -y build-essential &&
+                   apt-get install -y git libgtk2.0-dev pkg-config libavcodec-dev libavformat-dev libswscale-dev &&
+                   apt-get install -y python-dev python-numpy libtbb2 libtbb-dev libjpeg-dev libpng-dev libtiff-dev libjasper-dev libdc1394-22-dev
+
+      - run:
+          name: Install ICC
+          command: ./intel-compilers/install-linux.sh
+
+      - run:
+          name: Setup compiler variables
+          command: source /opt/intel/bin/iccvars.sh -arch intel64 && 
+                   icc -v && 
+                   mkdir build && cd build
+                   
+      - run:
+          name: Build instructions and running make
+          command: cmake -D CMAKE_BUILD_TYPE=RELEASE -D CMAKE_INSTALL_PREFIX=/usr/local -D WITH_TBB=OFF -D BUILD_NEW_PYTHON_SUPPORT=ON -D WITH_V4L=ON -D INSTALL_C_EXAMPLES=ON -D INSTALL_PYTHON_EXAMPLES=ON -D BUILD_EXAMPLES=ON -D WITH_QT=ON -D WITH_OPENGL=ON .. &&
+                   make -j5 && make install &&
+                   sh -c 'echo "/usr/local/lib" > /etc/ld.so.conf.d/opencv.conf' &&
+                   ldconfig && echo "OpenCV Installed" &&
+                   cd ../../ &&
+                   cmake CMakeLists.txt && make && ./a.out
+          
+                   
